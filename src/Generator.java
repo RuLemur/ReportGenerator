@@ -60,6 +60,13 @@ public class Generator {
 
     //Метод вывода в файл значений
     private static void outToFile(String s, File file) {
+        if (!file.exists()){
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF16"))) {
             bw.write(s);
             bw.flush();
