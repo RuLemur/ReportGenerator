@@ -6,8 +6,7 @@ import sun.text.normalizer.UTF16;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -17,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.Inflater;
 
 public class Generator {
     public static void main(String[] args) {
@@ -30,16 +30,38 @@ public class Generator {
         StringBuilder report = new StringBuilder();
         inputData = readDataFile(inputDataFile);
 
+        int screenSize = Integer.valueOf(settings.get(0).get(0)) * Integer.valueOf(settings.get(0).get(1));
         report.append(createHeader(settings)).append("\n");
-
         report.append(createLine(Integer.valueOf(settings.get(0).get(0)))).append("\n");
-        report.append(newNote(settings, inputData.get(0)));
+        for (int i = 0; i < inputData.size(); i++) {
 
-        //System.out.println(inputData.get(1)[1]);
+            if (report.length() < screenSize) {
+                report.append(newNote(settings, inputData.get(i)));
+                report.append(createLine(Integer.valueOf(settings.get(0).get(0)))).append("\n");
+            } else {
+                report.append("~\n");
+                report.append(createHeader(settings)).append("\n");
+                report.append(createLine(Integer.valueOf(settings.get(0).get(0)))).append("\n");
+                screenSize *= 2;
+                i--;
+            }
+        }
+        outToFile(report.toString(),outData);
         System.out.print(report);
-        // System.out.println(newNote(settings, inputData.get(0)));
 
 
+    }
+
+    private static void outToFile(String s,File file) {
+        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),"UTF16"))){
+            bw.write(s);
+            bw.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        /*rintWriter writer = new PrintWriter("the-file-name.txt", "UTF-8");
+        writer.println("The first line"); writer.println("The second line"); writer.close();
+        Создание двоичного файла (также перезапись файла):*/
     }
 
     public static List<LinkedList<String>> parseSettingsXML(File settings) {
@@ -148,31 +170,42 @@ public class Generator {
     public static String newNote(List<LinkedList<String>> settings, String[] data) {
         StringBuilder note = new StringBuilder();
         StringBuilder[] dataRemain = new StringBuilder[data.length];
-
+        int maxiter = 1;
         for (int i = 0; i < data.length; i++) {
             dataRemain[i] = new StringBuilder(data[i]);
-        }
-        //while (dataRemain.length != 0) {
-        for (int i = 0; i < data.length; i++) {
-            note.append("| ");
-            if (dataRemain[i].length() <= Integer.valueOf(settings.get(i + 1).get(1))) {
-                note.append(dataRemain[i]);
-                note.append(addSpaces(Integer.valueOf(settings.get(i + 1).get(1)) - dataRemain[i].length()));
-                note.append(" ");
-                dataRemain[i].delete(0, dataRemain[i].length() - 1);
-            } else {
-                //while (true) {
-                if (dataRemain[i].indexOf("ф") != -1) {
-
-                }
-                //}
-                note.append("|");
-                //  }
-
+            if (dataRemain[i].length() > Integer.valueOf(settings.get(i + 1).get(1))) {
+                int t = dataRemain[i].length() / Integer.valueOf(settings.get(i + 1).get(1)) + 1;
+                if (t > maxiter)
+                    maxiter = t;
             }
         }
-        return note.toString();
+        for (int k = 0; k < maxiter; k++) {
+            for (int i = 0; i < data.length; i++) {
+                note.append("| ");
+                if (dataRemain[i].length() <= Integer.valueOf(settings.get(i + 1).get(1))) {
+                    note.append(dataRemain[i]);
+                    note.append(addSpaces(Integer.valueOf(settings.get(i + 1).get(1)) - dataRemain[i].length()));
+                    note.append(" ");
+                    dataRemain[i].delete(0, dataRemain[i].length());
+                    data[i] = dataRemain[i].toString();
+                } else {
+                    note.append(dataRemain[i].substring(0, 7));
+                    //note.append(addSpaces(Integer.valueOf(settings.get(i + 1).get(1)) - dataRemain[i].length()));
+                    note.append(" ");
+                    try {
+                        dataRemain[i].delete(0, Integer.valueOf(settings.get(i + 1).get(1)));
+                    } catch (Exception e) {
+                    }
+                }
 
+
+            }
+            note.append("|\n");
+
+        }
+
+
+        return note.toString();
     }
 
     public static String addSpaces(int count) {
