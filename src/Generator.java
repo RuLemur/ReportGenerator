@@ -1,7 +1,6 @@
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-import sun.text.normalizer.UTF16;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -10,62 +9,68 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.Inflater;
 
 public class Generator {
+    //MAIN method - управляем классом и формируем репорт
     public static void main(String[] args) {
         File settingsFile = new File(args[0]);  //input data
         String inputDataFile = args[1];
         File outData = new File(args[2]);
 
         List<LinkedList<String>> settings = parseSettingsXML(settingsFile);
-        List<String[]> inputData = new LinkedList<>();
+        List<String[]> inputData = readDataFile(inputDataFile);
 
         StringBuilder report = new StringBuilder();
-        inputData = readDataFile(inputDataFile);
-
+        //узнаем размер страницы
         int screenSize = Integer.valueOf(settings.get(0).get(0)) * Integer.valueOf(settings.get(0).get(1));
+
+        //создаем самый первый заголовок
         report.append(createHeader(settings)).append("\n");
         report.append(createLine(Integer.valueOf(settings.get(0).get(0)))).append("\n");
-        for (int i = 0; i < inputData.size(); i++) {
-
-            if (report.length() < screenSize) {
-                report.append(newNote(settings, inputData.get(i)));
-                report.append(createLine(Integer.valueOf(settings.get(0).get(0)))).append("\n");
-            } else {
-                report.append("~\n");
-                report.append(createHeader(settings)).append("\n");
-                report.append(createLine(Integer.valueOf(settings.get(0).get(0)))).append("\n");
-                screenSize *= 2;
-                i--;
+        if (inputData.size() < 20) {
+            //начинаем создавать отчет, каждая итерация цикла создает новую запись
+            for (int i = 0; i < inputData.size(); i++) {
+                //если новая запись не влезет на эту страницу завершаем её и снова создаем заголовк и продолжаем
+                if (report.length() < screenSize) {
+                    report.append(newNote(settings, inputData.get(i)));
+                    report.append(createLine(Integer.valueOf(settings.get(0).get(0)))).append("\n");
+                } else {
+                    report.append("~\n");
+                    report.append(createHeader(settings)).append("\n");
+                    report.append(createLine(Integer.valueOf(settings.get(0).get(0)))).append("\n");
+                    screenSize *= 2;
+                    i--;
+                }
             }
+            //сохраняем в файл
+            outToFile(report.toString(), outData);
+            System.out.print("job is done");
+
+        } else {
+            System.out.println("Error: so much input data (demo version)");
         }
-        outToFile(report.toString(),outData);
-        System.out.print(report);
 
 
     }
 
-    private static void outToFile(String s,File file) {
-        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),"UTF16"))){
+    //Метод вывода в файл значений
+    private static void outToFile(String s, File file) {
+        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF16"))) {
             bw.write(s);
             bw.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        /*rintWriter writer = new PrintWriter("the-file-name.txt", "UTF-8");
-        writer.println("The first line"); writer.println("The second line"); writer.close();
-        Создание двоичного файла (также перезапись файла):*/
+
     }
 
+    // парсер файла настроек
     public static List<LinkedList<String>> parseSettingsXML(File settings) {
-        //Map<String, String> result = new LinkedHashMap<>();
         List<LinkedList<String>> result = new LinkedList<>();
         try {
             SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
@@ -131,6 +136,7 @@ public class Generator {
         return result;
     }
 
+    //создание заголовка
     public static String createHeader(List<LinkedList<String>> settingList) {
         StringBuilder header = new StringBuilder();
         int summcol = 1;
@@ -152,6 +158,7 @@ public class Generator {
 
     }
 
+    // парсер файла с данными
     public static List<String[]> readDataFile(String data) {
         List<String> fileLines = new LinkedList<>();
         List<String[]> outList = new LinkedList<>();
@@ -167,6 +174,7 @@ public class Generator {
         return outList;
     }
 
+    //создание отдельной записи в репорт
     public static String newNote(List<LinkedList<String>> settings, String[] data) {
         StringBuilder note = new StringBuilder();
         StringBuilder[] dataRemain = new StringBuilder[data.length];
@@ -179,6 +187,9 @@ public class Generator {
                     maxiter = t;
             }
         }
+        //если длинна записи больше заданной ширины колонки переменная maxiter примет значение нужного количества строк
+        //далее в каждую строку записывается значение из dataRemain, после чего удаляется, что бы не записываться вновь,
+        //если вдруг придется делать многострочную запись.
         for (int k = 0; k < maxiter; k++) {
             for (int i = 0; i < data.length; i++) {
                 note.append("| ");
@@ -197,17 +208,13 @@ public class Generator {
                     } catch (Exception e) {
                     }
                 }
-
-
             }
             note.append("|\n");
-
         }
-
-
         return note.toString();
     }
 
+    // создаем строку с заданным числом пробелов
     public static String addSpaces(int count) {
         StringBuilder str = new StringBuilder();
         for (int i = 0; i < count; i++) {
@@ -217,6 +224,7 @@ public class Generator {
         return str.toString();
     }
 
+    //делаем линию разделения
     public static String createLine(int width) {
         StringBuilder str = new StringBuilder();
         for (int i = 0; i < width; i++) {
