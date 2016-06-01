@@ -162,32 +162,36 @@ public class Generator {
                 dataRemain[i].delete(0, dataRemain[i].length() - 1);
             } else {
                 //while (true) {
-                    if (dataRemain[i].indexOf("ф")!=-1) {
+                if (dataRemain[i].indexOf("ф") != -1) {
 
-                    }
+                }
                 //}
                 note.append("|");
                 //  }
-                return note.toString();
-            }
 
-        public static String addSpaces ( int count){
-            StringBuilder str = new StringBuilder();
-            for (int i = 0; i < count; i++) {
-                str.append(" ");
             }
-
-            return str.toString();
         }
-
-        public static String createLine ( int width){
-            StringBuilder str = new StringBuilder();
-            for (int i = 0; i < width; i++) {
-                str.append("-");
-            }
-            //str.append("\n");
-            return str.toString();
-        }
+        return note.toString();
 
     }
+
+    public static String addSpaces(int count) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            str.append(" ");
+        }
+
+        return str.toString();
+    }
+
+    public static String createLine(int width) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < width; i++) {
+            str.append("-");
+        }
+        //str.append("\n");
+        return str.toString();
+    }
+
+}
 
